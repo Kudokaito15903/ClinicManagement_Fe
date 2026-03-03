@@ -15,6 +15,7 @@ import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import MenuIcon from '@mui/icons-material/Menu';
 import HealingIcon from '@mui/icons-material/Healing';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const DRAWER_WIDTH = 260;
 
@@ -27,6 +28,7 @@ const navItems = [
     { label: 'Chẩn đoán', icon: <DiagnosisIcon />, path: '/diagnoses' },
     { label: 'Dịch vụ y tế', icon: <MedicalServicesIcon />, path: '/services' },
     { label: 'Báo cáo', icon: <BarChartIcon />, path: '/reports' },
+    { label: 'Cấu hình', icon: <SettingsIcon />, path: '/system-configs' },
 ];
 
 export default function AppLayout() {

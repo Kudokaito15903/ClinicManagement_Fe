@@ -19,6 +19,7 @@ import RoomPage from './pages/rooms/RoomPage';
 import DiagnosisPage from './pages/diagnoses/DiagnosisPage';
 import MedServicePage from './pages/medservices/MedServicePage';
 import ReportPage from './pages/reports/ReportPage';
+import SystemConfigPage from './pages/systemconfigs/SystemConfigPage';
 
 export default function App() {
     return (
@@ -52,6 +53,7 @@ export default function App() {
                             <Route path="services" element={<MedServicePage />} />
 
                             <Route path="reports" element={<ReportPage />} />
+                            <Route path="system-configs" element={<SystemConfigPage />} />
                         </Route>
                     </Routes>
                 </BrowserRouter>

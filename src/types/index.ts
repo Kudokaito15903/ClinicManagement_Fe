@@ -291,3 +291,11 @@ export interface PaymentResponse {
     paidAt: string;
 }
 
+// ───────── System Configs ─────────
+
+export interface SystemConfig {
+    configKey: string;
+    configValue: string;
+    description?: string;
+}
+
