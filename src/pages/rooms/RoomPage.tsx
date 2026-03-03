@@ -43,7 +43,7 @@ export default function RoomPage() {
             .then(setRooms)
             .catch(() => enqueueSnackbar('Không thể tải dữ liệu', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [enqueueSnackbar]);
+    }, []);
 
     useEffect(() => { fetch(); }, [fetch]);
 

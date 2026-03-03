@@ -21,7 +21,7 @@ const DRAWER_WIDTH = 260;
 const navItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { label: 'Bệnh nhân', icon: <PeopleIcon />, path: '/patients' },
-    { label: 'Lần khám', icon: <EventNoteIcon />, path: '/visits/new' },
+    { label: 'Lần khám', icon: <EventNoteIcon />, path: '/visits' },
     { label: 'Bác sĩ', icon: <LocalHospitalIcon />, path: '/doctors' },
     { label: 'Phòng khám', icon: <MeetingRoomIcon />, path: '/rooms' },
     { label: 'Chẩn đoán', icon: <DiagnosisIcon />, path: '/diagnoses' },

@@ -44,7 +44,7 @@ export default function DoctorPage() {
             .then(setDoctors)
             .catch(() => enqueueSnackbar('Không thể tải dữ liệu', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [enqueueSnackbar]);
+    }, []);
 
     useEffect(() => { fetch(); }, [fetch]);
 

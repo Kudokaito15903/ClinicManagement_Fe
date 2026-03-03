@@ -49,7 +49,7 @@ export default function PatientFormPage() {
             }))
             .catch(() => enqueueSnackbar('Không thể tải thông tin bệnh nhân', { variant: 'error' }))
             .finally(() => setInitLoading(false));
-    }, [id, isEdit, reset, enqueueSnackbar]);
+    }, [id, isEdit, reset]);
 
     const onSubmit = async (data: FormData) => {
         setLoading(true);

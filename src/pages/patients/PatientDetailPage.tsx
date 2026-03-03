@@ -39,7 +39,7 @@ export default function PatientDetailPage() {
             .then(([p, v]) => { setPatient(p); setVisits(v); })
             .catch(() => enqueueSnackbar('Không thể tải dữ liệu', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [id, enqueueSnackbar]);
+    }, [id]);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
     if (!patient) return <Typography>Không tìm thấy bệnh nhân.</Typography>;

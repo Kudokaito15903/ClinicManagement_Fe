@@ -36,7 +36,7 @@ export default function PatientListPage() {
             .then(setPatients)
             .catch(() => enqueueSnackbar('Không thể tải danh sách bệnh nhân', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [enqueueSnackbar]);
+    }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 

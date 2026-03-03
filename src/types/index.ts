@@ -81,11 +81,17 @@ export interface VisitServiceItem {
     createdAt?: string;
 }
 
-export type VisitStatus = 'received' | 'examining' | 'done' | string;
+// Status values as returned by the API (PascalCase)
+export type VisitStatus = 'Received' | 'Examining' | 'WaitingResult' | 'Completed' | 'Paid' | string;
 
 export interface Visit {
     id: number;
     code?: string;
+    // Flat fields returned by GET /visits list endpoint
+    patientName?: string;
+    doctorName?: string;
+    roomName?: string;
+    // Nested objects returned by GET /visits/:id detail endpoint
     patient?: Patient | null;
     doctor?: DoctorRef | null;
     room?: RoomRef | null;
@@ -100,6 +106,15 @@ export interface Visit {
     roomId?: number;
     examinationFee?: number;
     notes?: string;
+}
+
+// Response shape of GET /visits/:id/detail
+export interface VisitDetailResponse {
+    visit: Visit;
+    services: VisitServiceItem[];
+    serviceTotal: number;
+    examinationFee: number;
+    grandTotal: number;
 }
 
 // ───────── Bill / Payment ─────────
@@ -235,3 +250,44 @@ export interface ApiError {
     message: string;
     timestamp: string;
 }
+
+// ───────── Visit Diagnoses ─────────
+
+export interface VisitDiagnosis {
+    id: number;
+    visitId: number;
+    diagnosisId: number;
+    icdCode: string;
+    name: string;
+    category?: string;
+    type?: 'primary' | 'secondary';
+    note?: string;
+}
+
+export interface AddVisitDiagnosisRequest {
+    diagnosisId: number;
+    type?: 'primary' | 'secondary';
+    note?: string;
+}
+
+// ───────── Payment ─────────
+
+export type PaymentMethod = 'cash' | 'card' | 'transfer';
+
+export interface PaymentCreateRequest {
+    method: PaymentMethod;
+    discount?: number;
+    note?: string;
+}
+
+export interface PaymentResponse {
+    id: number;
+    visitId: number;
+    method: PaymentMethod;
+    discount: number;
+    grandTotal: number;
+    actualPaid: number;
+    note?: string;
+    paidAt: string;
+}
+
