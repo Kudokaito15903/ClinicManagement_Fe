@@ -13,7 +13,7 @@ interface Props {
     onClose: () => void;
 }
 
-const fmt = (n: number) => n.toLocaleString('vi-VN') + ' ₫';
+const fmt = (n?: number) => (n ?? 0).toLocaleString('vi-VN') + ' ₫';
 
 export default function BillModal({ open, bill, receiptUrl, onClose }: Props) {
     if (!bill) return null;
@@ -34,13 +34,31 @@ export default function BillModal({ open, bill, receiptUrl, onClose }: Props) {
                 <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <Box sx={{ flex: 1 }}>
                         <Typography variant="caption" color="text.secondary">Bệnh nhân</Typography>
-                        <Typography fontWeight={600}>{bill.patientName}</Typography>
+                        <Typography fontWeight={600}>{bill.patientName ?? '—'}</Typography>
+                        {bill.patientCode && <Typography variant="caption" color="text.secondary">{bill.patientCode}</Typography>}
                     </Box>
                     <Box>
                         <Typography variant="caption" color="text.secondary">Ngày khám</Typography>
-                        <Typography fontWeight={600}>{bill.visitDate}</Typography>
+                        <Typography fontWeight={600}>{bill.visitDate ?? '—'}</Typography>
                     </Box>
                 </Box>
+
+                {(bill.doctorName || bill.roomName) && (
+                    <Box sx={{ mb: 2, display: 'flex', gap: 4 }}>
+                        {bill.doctorName && (
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">Bác sĩ</Typography>
+                                <Typography fontWeight={500}>{bill.doctorName}</Typography>
+                            </Box>
+                        )}
+                        {bill.roomName && (
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">Phòng</Typography>
+                                <Typography fontWeight={500}>{bill.roomName}</Typography>
+                            </Box>
+                        )}
+                    </Box>
+                )}
 
                 <Divider sx={{ mb: 2 }} />
 
@@ -59,7 +77,7 @@ export default function BillModal({ open, bill, receiptUrl, onClose }: Props) {
                                 <TableCell>{s.serviceName}</TableCell>
                                 <TableCell align="center">{s.quantity}</TableCell>
                                 <TableCell align="right">{fmt(s.unitPrice)}</TableCell>
-                                <TableCell align="right">{fmt(s.total)}</TableCell>
+                                <TableCell align="right">{fmt(s.subtotal)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -69,13 +87,17 @@ export default function BillModal({ open, bill, receiptUrl, onClose }: Props) {
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
-                        <Typography variant="body2" color="text.secondary">Phí khám</Typography>
-                        <Typography fontWeight={500}>{fmt(bill.examinationFee)}</Typography>
+                        {bill.examinationFee != null && (
+                            <>
+                                <Typography variant="body2" color="text.secondary">Phí khám</Typography>
+                                <Typography fontWeight={500}>{fmt(bill.examinationFee)}</Typography>
+                            </>
+                        )}
                     </Box>
                     <Box sx={{ textAlign: 'right' }}>
                         <Typography variant="caption" color="text.secondary">Tổng cộng</Typography>
                         <Typography variant="h5" fontWeight={700} color="primary.main">
-                            {fmt(bill.totalAmount)}
+                            {fmt(bill.grandTotal)}
                         </Typography>
                     </Box>
                 </Box>

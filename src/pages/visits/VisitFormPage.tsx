@@ -13,15 +13,12 @@ import { useSnackbar } from 'notistack';
 import { createVisit, getVisit, updateVisit } from '@/api/visits';
 import DoctorSelect from '@/components/DoctorSelect';
 import RoomSelect from '@/components/RoomSelect';
-import DiagnosisSearch from '@/components/DiagnosisSearch';
 
 const schema = z.object({
     patientId: z.coerce.number().min(1, 'Cần chọn bệnh nhân'),
     doctorId: z.number().nullable().optional(),
     roomId: z.number().nullable().optional(),
-    diagnosisId: z.number().nullable().optional(),
-    examinationFee: z.coerce.number().min(0).optional(),
-    notes: z.string().optional(),
+    reason: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -43,9 +40,7 @@ export default function VisitFormPage() {
             patientId: defaultPatientId,
             doctorId: null,
             roomId: null,
-            diagnosisId: null,
-            examinationFee: 0,
-            notes: '',
+            reason: '',
         },
     });
 
@@ -53,12 +48,10 @@ export default function VisitFormPage() {
         if (!isEdit) return;
         getVisit(Number(id))
             .then((v) => reset({
-                patientId: v.patientId,
-                doctorId: v.doctorId ?? null,
-                roomId: v.roomId ?? null,
-                diagnosisId: v.diagnosisId ?? null,
-                examinationFee: v.examinationFee,
-                notes: v.notes ?? '',
+                patientId: v.patient?.id ?? v.patientId ?? 0,
+                doctorId: v.doctor?.id ?? null,
+                roomId: v.room?.id ?? null,
+                reason: v.reason ?? '',
             }))
             .catch(() => enqueueSnackbar('Không thể tải lần khám', { variant: 'error' }))
             .finally(() => setInitLoading(false));
@@ -68,18 +61,20 @@ export default function VisitFormPage() {
         setLoading(true);
         try {
             if (isEdit) {
-                const updatePayload = {
+                await updateVisit(Number(id), {
                     doctorId: data.doctorId ?? undefined,
                     roomId: data.roomId ?? undefined,
-                    diagnosisId: data.diagnosisId ?? undefined,
-                    examinationFee: data.examinationFee,
-                    notes: data.notes,
-                };
-                await updateVisit(Number(id), updatePayload);
+                    reason: data.reason,
+                });
                 enqueueSnackbar('Cập nhật lần khám thành công', { variant: 'success' });
                 navigate(`/visits/${id}`);
             } else {
-                const v = await createVisit(data as any);
+                const v = await createVisit({
+                    patientId: data.patientId,
+                    doctorId: data.doctorId ?? undefined,
+                    roomId: data.roomId ?? undefined,
+                    reason: data.reason,
+                });
                 enqueueSnackbar('Tạo lần khám thành công', { variant: 'success' });
                 navigate(`/visits/${v.id}`);
             }
@@ -142,40 +137,17 @@ export default function VisitFormPage() {
                             </Grid>
 
                             <Grid item xs={12}>
-                                <DiagnosisSearch
-                                    value={watch('diagnosisId') ?? null}
-                                    onChange={(v) => setValue('diagnosisId', v)}
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
                                 <Controller
-                                    name="examinationFee"
+                                    name="reason"
                                     control={control}
                                     render={({ field }) => (
                                         <TextField
                                             {...field}
-                                            label="Phí khám (VNĐ)"
-                                            fullWidth
-                                            type="number"
-                                            error={!!errors.examinationFee}
-                                            helperText={errors.examinationFee?.message}
-                                        />
-                                    )}
-                                />
-                            </Grid>
-
-                            <Grid item xs={12}>
-                                <Controller
-                                    name="notes"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <TextField
-                                            {...field}
-                                            label="Ghi chú"
+                                            label="Lý do khám"
                                             fullWidth
                                             multiline
                                             rows={3}
+                                            placeholder="Vd: Ho, sốt, đau họng..."
                                         />
                                     )}
                                 />

@@ -13,11 +13,12 @@ import { useSnackbar } from 'notistack';
 import { getPatient, createPatient, updatePatient } from '@/api/patients';
 
 const schema = z.object({
-    code: z.string().optional(),
     fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
-    birthYear: z.coerce.number().min(1900).max(2100).optional().or(z.literal('')),
+    dateOfBirth: z.string().optional(),
     gender: z.enum(['Male', 'Female', 'Other']).optional(),
+    phone: z.string().optional(),
     address: z.string().optional(),
+    note: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -32,18 +33,19 @@ export default function PatientFormPage() {
 
     const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
-        defaultValues: { fullName: '', code: '', address: '', gender: '' as any },
+        defaultValues: { fullName: '', dateOfBirth: '', gender: '' as any, phone: '', address: '', note: '' },
     });
 
     useEffect(() => {
         if (!isEdit) return;
         getPatient(Number(id))
             .then((p) => reset({
-                code: p.code,
                 fullName: p.fullName,
-                birthYear: p.birthYear ?? '',
+                dateOfBirth: p.dateOfBirth ?? '',
                 gender: p.gender ?? ('' as any),
+                phone: p.phone ?? '',
                 address: p.address ?? '',
+                note: p.note ?? '',
             }))
             .catch(() => enqueueSnackbar('Không thể tải thông tin bệnh nhân', { variant: 'error' }))
             .finally(() => setInitLoading(false));
@@ -54,7 +56,8 @@ export default function PatientFormPage() {
         try {
             const payload = {
                 ...data,
-                birthYear: data.birthYear ? Number(data.birthYear) : undefined,
+                dateOfBirth: data.dateOfBirth || undefined,
+                gender: data.gender || undefined,
             };
             if (isEdit) {
                 await updatePatient(Number(id), payload);
@@ -75,7 +78,6 @@ export default function PatientFormPage() {
 
     return (
         <Box>
-            {/* Breadcrumb */}
             <Breadcrumbs sx={{ mb: 2 }}>
                 <Link underline="hover" color="inherit" sx={{ cursor: 'pointer' }} onClick={() => navigate('/patients')}>
                     Bệnh nhân
@@ -108,16 +110,15 @@ export default function PatientFormPage() {
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Controller
-                                    name="birthYear"
+                                    name="dateOfBirth"
                                     control={control}
                                     render={({ field }) => (
                                         <TextField
                                             {...field}
-                                            label="Năm sinh"
+                                            label="Ngày sinh"
                                             fullWidth
-                                            type="number"
-                                            error={!!errors.birthYear}
-                                            helperText={errors.birthYear?.message}
+                                            type="date"
+                                            InputLabelProps={{ shrink: true }}
                                         />
                                     )}
                                 />
@@ -135,6 +136,7 @@ export default function PatientFormPage() {
                                             error={!!errors.gender}
                                             helperText={errors.gender?.message}
                                         >
+                                            <MenuItem value="">— Chọn —</MenuItem>
                                             <MenuItem value="Male">Nam</MenuItem>
                                             <MenuItem value="Female">Nữ</MenuItem>
                                             <MenuItem value="Other">Khác</MenuItem>
@@ -142,7 +144,20 @@ export default function PatientFormPage() {
                                     )}
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid item xs={12} sm={6}>
+                                <Controller
+                                    name="phone"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="Số điện thoại"
+                                            fullWidth
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
                                 <Controller
                                     name="address"
                                     control={control}
@@ -150,6 +165,19 @@ export default function PatientFormPage() {
                                         <TextField
                                             {...field}
                                             label="Địa chỉ"
+                                            fullWidth
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Controller
+                                    name="note"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="Ghi chú (dị ứng, tiền sử...)"
                                             fullWidth
                                             multiline
                                             rows={2}

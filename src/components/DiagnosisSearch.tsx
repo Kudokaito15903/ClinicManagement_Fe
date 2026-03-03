@@ -28,7 +28,7 @@ export default function DiagnosisSearch({ value, onChange, error }: Props) {
             options={options}
             value={selected}
             loading={loading}
-            getOptionLabel={(d) => `[${d.code}] ${d.name}`}
+            getOptionLabel={(d) => `[${d.icdCode}] ${d.name}`}
             filterOptions={(x) => x}
             onInputChange={(_, v) => handleSearch(v)}
             onChange={(_, v) => {

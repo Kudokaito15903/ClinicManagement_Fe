@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import dayjs from 'dayjs';
 import {
     Box, Typography, Button, TextField, InputAdornment,
     Card, CardContent, Table, TableBody, TableCell, TableContainer,
@@ -107,9 +108,9 @@ export default function PatientListPage() {
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Bệnh nhân</TableCell>
-                                        <TableCell>Mã BN</TableCell>
-                                        <TableCell>Năm sinh</TableCell>
+                                        <TableCell>Ngày sinh</TableCell>
                                         <TableCell>Giới tính</TableCell>
+                                        <TableCell>SĐT</TableCell>
                                         <TableCell>Địa chỉ</TableCell>
                                         <TableCell align="right">Thao tác</TableCell>
                                     </TableRow>
@@ -117,7 +118,7 @@ export default function PatientListPage() {
                                 <TableBody>
                                     {patients.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                                            <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
                                                     <PeopleIcon sx={{ fontSize: 48, opacity: 0.3 }} />
                                                     <Typography>Không có bệnh nhân nào</Typography>
@@ -135,11 +136,13 @@ export default function PatientListPage() {
                                                     <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '0.8rem' }}>
                                                         {p.fullName.charAt(0)}
                                                     </Avatar>
-                                                    <Typography fontWeight={500}>{p.fullName}</Typography>
+                                                    <Box>
+                                                        <Typography fontWeight={500}>{p.fullName}</Typography>
+                                                        <Typography variant="caption" color="text.secondary">{p.code}</Typography>
+                                                    </Box>
                                                 </Box>
                                             </TableCell>
-                                            <TableCell><Chip label={p.code} size="small" variant="outlined" /></TableCell>
-                                            <TableCell>{p.birthYear ?? '—'}</TableCell>
+                                            <TableCell>{p.dateOfBirth ? dayjs(p.dateOfBirth).format('DD/MM/YYYY') : '—'}</TableCell>
                                             <TableCell>
                                                 <Chip
                                                     label={genderLabel(p.gender)}
@@ -147,6 +150,7 @@ export default function PatientListPage() {
                                                     color={genderColor(p.gender) as 'info' | 'secondary' | 'default'}
                                                 />
                                             </TableCell>
+                                            <TableCell>{p.phone ?? '—'}</TableCell>
                                             <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {p.address ?? '—'}
                                             </TableCell>
