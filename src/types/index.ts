@@ -35,14 +35,18 @@ export interface DiagnosisRef {
     description?: string | null;
 }
 
+export type AcademicTitle = 'None' | 'Master_CKI' | 'PhD_CKII' | 'AssociateProfessor' | 'Professor';
+
+/** Shape returned by GET /api/doctors and GET /api/doctors/{id} */
 export interface Doctor {
     id: number;
-    code?: string;
+    code: string;            // auto-generated, e.g. BS001
     fullName: string;
-    specialty?: string;
-    phone?: string;
-    email?: string;
-    isActive?: boolean;
+    specialty?: string | null;
+    academicTitle?: AcademicTitle | null;
+    phone?: string | null;
+    email?: string | null;
+    isActive: boolean;
 }
 
 export interface Room {
@@ -219,7 +223,10 @@ export interface VisitStatusUpdateRequest {
 
 export interface DoctorRequest {
     fullName: string;
-    specialty?: string;
+    specialty?: string | null;
+    academicTitle?: AcademicTitle | null;
+    phone?: string | null;
+    email?: string | null;
 }
 
 export interface RoomRequest {
