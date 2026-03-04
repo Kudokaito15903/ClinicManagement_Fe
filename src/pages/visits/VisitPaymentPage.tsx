@@ -17,9 +17,9 @@ import type { Visit, VisitServiceItem, PaymentMethod } from '@/types';
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN') + ' ₫';
 
 const METHODS: { value: PaymentMethod; label: string; icon: string }[] = [
-    { value: 'cash', label: 'Tiền mặt', icon: '💵' },
-    { value: 'card', label: 'Thẻ', icon: '💳' },
-    { value: 'transfer', label: 'Chuyển khoản', icon: '🏦' },
+    { value: 'Cash', label: 'Tiền mặt', icon: '💵' },
+    { value: 'Card', label: 'Thẻ', icon: '💳' },
+    { value: 'Transfer', label: 'Chuyển khoản', icon: '🏦' },
 ];
 
 export default function VisitPaymentPage() {
@@ -33,8 +33,8 @@ export default function VisitPaymentPage() {
     const [loading, setLoading] = useState(true);
 
     const [discount, setDiscount] = useState(0);
-    const [method, setMethod] = useState<PaymentMethod>('cash');
-    const [note, setNote] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
+    const [cashierNote, setCashierNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [paidAmount, setPaidAmount] = useState(0);
@@ -62,8 +62,12 @@ export default function VisitPaymentPage() {
     const handleConfirm = async () => {
         setSubmitting(true);
         try {
-            const res = await createPayment(visitId, { method, discount: discount || undefined, note: note || undefined });
-            setPaidAmount(res.actualPaid ?? actualPaid);
+            const res = await createPayment(visitId, {
+                paymentMethod,
+                discount: discount || undefined,
+                cashierNote: cashierNote || null,
+            });
+            setPaidAmount(res.finalAmount);
             setSuccess(true);
             enqueueSnackbar('Thanh toán thành công!', { variant: 'success' });
         } catch (err: any) {
@@ -89,7 +93,8 @@ export default function VisitPaymentPage() {
                         {fmt(paidAmount)}
                     </Typography>
                     <Typography color="text.secondary" sx={{ mb: 3 }}>
-                        {METHODS.find((m) => m.value === method)?.icon} {METHODS.find((m) => m.value === method)?.label}
+                        {METHODS.find((m) => m.value === paymentMethod)?.icon}{' '}
+                        {METHODS.find((m) => m.value === paymentMethod)?.label}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                         <Button
@@ -207,8 +212,8 @@ export default function VisitPaymentPage() {
                             {/* Payment method */}
                             <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>Hình thức thanh toán:</Typography>
                             <ToggleButtonGroup
-                                exclusive value={method}
-                                onChange={(_, v) => v && setMethod(v)}
+                                exclusive value={paymentMethod}
+                                onChange={(_, v) => v && setPaymentMethod(v)}
                                 sx={{ mb: 2, display: 'flex', gap: 1 }}
                             >
                                 {METHODS.map((m) => (
@@ -225,8 +230,8 @@ export default function VisitPaymentPage() {
                             <TextField
                                 label="Ghi chú thu ngân"
                                 fullWidth size="small"
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
+                                value={cashierNote}
+                                onChange={(e) => setCashierNote(e.target.value)}
                                 sx={{ mb: 2 }}
                             />
 

@@ -279,23 +279,28 @@ export interface AddVisitDiagnosisRequest {
 
 // ───────── Payment ─────────
 
-export type PaymentMethod = 'cash' | 'card' | 'transfer';
+/** Backend enum — PascalCase string as returned by API */
+export type PaymentMethod = 'Cash' | 'Card' | 'Transfer';
 
 export interface PaymentCreateRequest {
-    method: PaymentMethod;
+    examinationFee?: number | null;  // null → backend uses SystemConfig default
     discount?: number;
-    note?: string;
+    paymentMethod?: PaymentMethod;   // default: "Cash"
+    cashierNote?: string | null;
 }
 
 export interface PaymentResponse {
     id: number;
     visitId: number;
-    method: PaymentMethod;
+    examinationFee: number;
+    serviceTotal: number;
+    grandTotal: number;       // = finalAmount + discount
     discount: number;
-    grandTotal: number;
-    actualPaid: number;
-    note?: string;
-    paidAt: string;
+    finalAmount: number;
+    paymentMethod: PaymentMethod;
+    paidAt: string | null;    // ISO datetime UTC
+    cashierNote: string | null;
+    createdAt: string;        // ISO datetime UTC
 }
 
 // ───────── System Configs ─────────
