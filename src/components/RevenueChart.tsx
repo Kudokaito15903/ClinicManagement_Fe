@@ -3,14 +3,14 @@ import {
     CartesianGrid, Tooltip, Legend, Area, AreaChart,
 } from 'recharts';
 import { Box } from '@mui/material';
-import type { RevenueReport } from '@/types';
+import type { DailyRevenue } from '@/types';
 
 interface Props {
-    data: RevenueReport[];
+    data: DailyRevenue[];
     height?: number;
 }
 
-const fmt = (v: number) => (v / 1_000_000).toFixed(1) + 'M';
+const fmtAxis = (v: number) => (v / 1_000_000).toFixed(1) + 'M';
 
 export default function RevenueChart({ data, height = 300 }: Props) {
     return (
@@ -31,7 +31,7 @@ export default function RevenueChart({ data, height = 300 }: Props) {
                     />
                     <YAxis
                         tick={{ fontSize: 11, fill: '#64748b' }}
-                        tickFormatter={fmt}
+                        tickFormatter={fmtAxis}
                         width={50}
                     />
                     <Tooltip
@@ -41,7 +41,7 @@ export default function RevenueChart({ data, height = 300 }: Props) {
                     <Legend />
                     <Area
                         type="monotone"
-                        dataKey="revenue"
+                        dataKey="total"
                         name="Doanh thu (₫)"
                         stroke="#2563eb"
                         strokeWidth={2.5}

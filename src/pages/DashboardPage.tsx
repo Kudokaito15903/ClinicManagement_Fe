@@ -6,11 +6,10 @@ import {
 import PeopleIcon from '@mui/icons-material/People';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import dayjs from 'dayjs';
-import { getStatistics } from '@/api/reports';
-import { getRevenueReport } from '@/api/reports';
-import type { Statistics, RevenueReport } from '@/types';
+import { getStatistics, getRevenueReport } from '@/api/reports';
+import type { Statistics, DailyRevenue } from '@/types';
 import RevenueChart from '@/components/RevenueChart';
 
 interface StatCard {
@@ -25,7 +24,7 @@ const fmtMoney = (n?: number) => (n || 0).toLocaleString('vi-VN') + ' ₫';
 
 export default function DashboardPage() {
     const [stats, setStats] = useState<Statistics | null>(null);
-    const [revenue, setRevenue] = useState<RevenueReport[]>([]);
+    const [daily, setDaily] = useState<DailyRevenue[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -33,7 +32,7 @@ export default function DashboardPage() {
         const to = dayjs().format('YYYY-MM-DD');
 
         Promise.all([getStatistics(), getRevenueReport(from, to)])
-            .then(([s, r]) => { setStats(s); setRevenue(r); })
+            .then(([s, r]) => { setStats(s); setDaily(r.daily ?? []); })
             .catch(() => { })
             .finally(() => setLoading(false));
     }, []);
@@ -49,24 +48,24 @@ export default function DashboardPage() {
             },
             {
                 label: 'Lần khám hôm nay',
-                value: stats.totalVisitsToday,
+                value: stats.visitsToday,
                 icon: <EventNoteIcon />,
                 color: '#10b981',
                 subtitle: dayjs().format('DD/MM/YYYY'),
             },
             {
                 label: 'Doanh thu tháng',
-                value: fmtMoney(stats.totalRevenueMonth),
+                value: fmtMoney(stats.revenueMonth),
                 icon: <AttachMoneyIcon />,
                 color: '#f59e0b',
                 subtitle: dayjs().format('MM/YYYY'),
             },
             {
-                label: 'Số bác sĩ',
-                value: stats.totalDoctors,
-                icon: <LocalHospitalIcon />,
+                label: 'Lần khám tháng',
+                value: stats.visitsThisMonth,
+                icon: <TrendingUpIcon />,
                 color: '#7c3aed',
-                subtitle: 'Đang làm việc',
+                subtitle: dayjs().format('MM/YYYY'),
             },
         ]
         : [];
@@ -134,8 +133,8 @@ export default function DashboardPage() {
                     <Divider sx={{ mb: 3 }} />
                     {loading ? (
                         <Skeleton height={300} variant="rectangular" sx={{ borderRadius: 2 }} />
-                    ) : revenue.length > 0 ? (
-                        <RevenueChart data={revenue} height={320} />
+                    ) : daily.length > 0 ? (
+                        <RevenueChart data={daily} height={320} />
                     ) : (
                         <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
                             <Typography>Chưa có dữ liệu doanh thu</Typography>

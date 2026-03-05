@@ -18,8 +18,9 @@ import type { Diagnosis } from '@/types';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 const schema = z.object({
-    code: z.string().min(1, 'Mã ICD không được trống'),
+    icdCode: z.string().min(1, 'Mã ICD không được trống'),
     name: z.string().min(1, 'Tên không được trống'),
+    category: z.string().optional(),
     description: z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
@@ -37,7 +38,7 @@ export default function DiagnosisPage() {
 
     const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
-        defaultValues: { code: '', name: '', description: '' },
+        defaultValues: { icdCode: '', name: '', category: '', description: '' },
     });
 
     const fetch = useCallback((kw?: string) => {
@@ -46,19 +47,34 @@ export default function DiagnosisPage() {
             .then(setItems)
             .catch(() => enqueueSnackbar('Không thể tải dữ liệu', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [enqueueSnackbar]);
+    }, []);
 
     useEffect(() => { fetch(); }, [fetch]);
 
-    const openCreate = () => { setEditItem(null); reset({ code: '', name: '', description: '' }); setDialogOpen(true); };
-    const openEdit = (d: Diagnosis) => { setEditItem(d); reset({ code: d.code, name: d.name, description: d.description ?? '' }); setDialogOpen(true); };
+    const openCreate = () => {
+        setEditItem(null);
+        reset({ icdCode: '', name: '', category: '', description: '' });
+        setDialogOpen(true);
+    };
+
+    const openEdit = (d: Diagnosis) => {
+        setEditItem(d);
+        reset({ icdCode: d.icdCode, name: d.name, category: d.category ?? '', description: d.description ?? '' });
+        setDialogOpen(true);
+    };
 
     const onSubmit = async (data: FormData) => {
         setSaving(true);
         try {
-            if (editItem) { await updateDiagnosis(editItem.id, data); enqueueSnackbar('Cập nhật thành công', { variant: 'success' }); }
-            else { await createDiagnosis(data); enqueueSnackbar('Thêm thành công', { variant: 'success' }); }
-            setDialogOpen(false); fetch(keyword);
+            if (editItem) {
+                await updateDiagnosis(editItem.id, data);
+                enqueueSnackbar('Cập nhật thành công', { variant: 'success' });
+            } else {
+                await createDiagnosis(data);
+                enqueueSnackbar('Thêm thành công', { variant: 'success' });
+            }
+            setDialogOpen(false);
+            fetch(keyword);
         } catch (err: any) {
             enqueueSnackbar(err?.response?.data?.message || 'Lỗi', { variant: 'error' });
         } finally { setSaving(false); }
@@ -70,7 +86,8 @@ export default function DiagnosisPage() {
         try {
             await deleteDiagnosis(deleteId);
             enqueueSnackbar('Đã xoá chẩn đoán', { variant: 'success' });
-            setDeleteId(null); fetch(keyword);
+            setDeleteId(null);
+            fetch(keyword);
         } catch { enqueueSnackbar('Xoá thất bại', { variant: 'error' }); }
         finally { setDeleting(false); }
     };
@@ -112,17 +129,19 @@ export default function DiagnosisPage() {
                                 <TableRow>
                                     <TableCell>Mã ICD</TableCell>
                                     <TableCell>Tên chẩn đoán</TableCell>
+                                    <TableCell>Chuyên khoa</TableCell>
                                     <TableCell>Mô tả</TableCell>
                                     <TableCell align="right">Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {items.length === 0 ? (
-                                    <TableRow><TableCell colSpan={4} align="center" sx={{ py: 6, color: 'text.secondary' }}>Không có kết quả</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>Không có kết quả</TableCell></TableRow>
                                 ) : items.map((d) => (
                                     <TableRow key={d.id} hover sx={{ '&:hover': { bgcolor: alpha('#2563eb', 0.03) } }}>
-                                        <TableCell><Chip label={d.code} size="small" color="info" /></TableCell>
+                                        <TableCell><Chip label={d.icdCode} size="small" color="info" /></TableCell>
                                         <TableCell><Typography fontWeight={500}>{d.name}</Typography></TableCell>
+                                        <TableCell sx={{ color: 'text.secondary' }}>{d.category ?? '—'}</TableCell>
                                         <TableCell sx={{ color: 'text.secondary', maxWidth: 200 }}>{d.description ?? '—'}</TableCell>
                                         <TableCell align="right">
                                             <Tooltip title="Sửa"><IconButton size="small" color="info" onClick={() => openEdit(d)}><EditIcon fontSize="small" /></IconButton></Tooltip>
@@ -140,11 +159,14 @@ export default function DiagnosisPage() {
                 <DialogTitle>{editItem ? 'Cập nhật chẩn đoán' : 'Thêm chẩn đoán mới'}</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ pt: 1 }}>
-                        <Grid item xs={12}><Controller name="code" control={control} render={({ field }) => (
-                            <TextField {...field} label="Mã ICD *" fullWidth error={!!errors.code} helperText={errors.code?.message} />
+                        <Grid item xs={12}><Controller name="icdCode" control={control} render={({ field }) => (
+                            <TextField {...field} label="Mã ICD *" fullWidth error={!!errors.icdCode} helperText={errors.icdCode?.message} />
                         )} /></Grid>
                         <Grid item xs={12}><Controller name="name" control={control} render={({ field }) => (
                             <TextField {...field} label="Tên *" fullWidth error={!!errors.name} helperText={errors.name?.message} />
+                        )} /></Grid>
+                        <Grid item xs={12}><Controller name="category" control={control} render={({ field }) => (
+                            <TextField {...field} label="Chuyên khoa" fullWidth />
                         )} /></Grid>
                         <Grid item xs={12}><Controller name="description" control={control} render={({ field }) => (
                             <TextField {...field} label="Mô tả" fullWidth multiline rows={2} />

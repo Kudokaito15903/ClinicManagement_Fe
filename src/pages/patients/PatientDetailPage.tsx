@@ -13,7 +13,18 @@ import { getPatient, getPatientVisits } from '@/api/patients';
 import type { Patient, Visit } from '@/types';
 import dayjs from 'dayjs';
 
-const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN') + ' ₫';
+const statusLabel = (s?: string) => {
+    if (s === 'received') return 'Đã tiếp nhận';
+    if (s === 'examining') return 'Đang khám';
+    if (s === 'done') return 'Hoàn thành';
+    return s ?? '—';
+};
+const statusColor = (s?: string): 'warning' | 'info' | 'success' | 'default' => {
+    if (s === 'received') return 'warning';
+    if (s === 'examining') return 'info';
+    if (s === 'done') return 'success';
+    return 'default';
+};
 
 export default function PatientDetailPage() {
     const { id } = useParams();
@@ -28,7 +39,7 @@ export default function PatientDetailPage() {
             .then(([p, v]) => { setPatient(p); setVisits(v); })
             .catch(() => enqueueSnackbar('Không thể tải dữ liệu', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [id, enqueueSnackbar]);
+    }, [id]);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
     if (!patient) return <Typography>Không tìm thấy bệnh nhân.</Typography>;
@@ -54,9 +65,11 @@ export default function PatientDetailPage() {
                             <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
                                 <Chip label={patient.code} sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} size="small" />
                                 {patient.gender && <Chip label={patient.gender === 'Male' ? 'Nam' : patient.gender === 'Female' ? 'Nữ' : 'Khác'} sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} size="small" />}
-                                {patient.birthYear && <Chip label={`Năm ${patient.birthYear} `} sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} size="small" />}
+                                {patient.dateOfBirth && <Chip label={`Sinh ${dayjs(patient.dateOfBirth).format('DD/MM/YYYY')}`} sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} size="small" />}
                             </Box>
-                            {patient.address && <Typography sx={{ mt: 1, opacity: 0.85 }} variant="body2">📍 {patient.address}</Typography>}
+                            {patient.phone && <Typography sx={{ mt: 0.5, opacity: 0.85 }} variant="body2">📞 {patient.phone}</Typography>}
+                            {patient.address && <Typography sx={{ mt: 0.5, opacity: 0.85 }} variant="body2">📍 {patient.address}</Typography>}
+                            {patient.note && <Typography sx={{ mt: 0.5, opacity: 0.75 }} variant="body2">📝 {patient.note}</Typography>}
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                             <Button
@@ -98,25 +111,31 @@ export default function PatientDetailPage() {
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>#</TableCell>
+                                    <TableCell>Mã lần khám</TableCell>
                                     <TableCell>Ngày khám</TableCell>
                                     <TableCell>Bác sĩ</TableCell>
                                     <TableCell>Phòng</TableCell>
-                                    <TableCell>Phí khám</TableCell>
-                                    <TableCell>Ghi chú</TableCell>
+                                    <TableCell>Lý do</TableCell>
+                                    <TableCell>Trạng thái</TableCell>
                                     <TableCell align="right">Chi tiết</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {visits.map((v) => (
                                     <TableRow key={v.id} hover sx={{ '&:hover': { bgcolor: alpha('#2563eb', 0.03) } }}>
-                                        <TableCell>{v.id}</TableCell>
+                                        <TableCell>{v.code ?? `#${v.id}`}</TableCell>
                                         <TableCell>{dayjs(v.visitDate).format('DD/MM/YYYY HH:mm')}</TableCell>
-                                        <TableCell>{(v.doctor as any)?.name ?? '—'}</TableCell>
-                                        <TableCell>{(v.room as any)?.name ?? '—'}</TableCell>
-                                        <TableCell>{fmt((v as any).total)}</TableCell>
+                                        <TableCell>{v.doctor?.name ?? '—'}</TableCell>
+                                        <TableCell>{v.room?.name ?? '—'}</TableCell>
                                         <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {v.notes ?? '—'}
+                                            {v.reason ?? '—'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={statusLabel(v.status)}
+                                                size="small"
+                                                color={statusColor(v.status)}
+                                            />
                                         </TableCell>
                                         <TableCell align="right">
                                             <Button size="small" variant="outlined" onClick={() => navigate(`/visits/${v.id}`)}>

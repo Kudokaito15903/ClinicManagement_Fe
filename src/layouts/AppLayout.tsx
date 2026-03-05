@@ -15,18 +15,23 @@ import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import MenuIcon from '@mui/icons-material/Menu';
 import HealingIcon from '@mui/icons-material/Healing';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 
 const DRAWER_WIDTH = 260;
 
 const navItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { label: 'Quầy lễ tân', icon: <EventNoteIcon />, path: '/reception' },
+    { label: 'Phòng bác sĩ', icon: <HealingIcon />, path: '/doctor-desk' },
     { label: 'Bệnh nhân', icon: <PeopleIcon />, path: '/patients' },
-    { label: 'Lần khám', icon: <EventNoteIcon />, path: '/visits/new' },
     { label: 'Bác sĩ', icon: <LocalHospitalIcon />, path: '/doctors' },
     { label: 'Phòng khám', icon: <MeetingRoomIcon />, path: '/rooms' },
     { label: 'Chẩn đoán', icon: <DiagnosisIcon />, path: '/diagnoses' },
     { label: 'Dịch vụ y tế', icon: <MedicalServicesIcon />, path: '/services' },
+    { label: 'Kho thuốc', icon: <LocalPharmacyIcon />, path: '/medicines' },
     { label: 'Báo cáo', icon: <BarChartIcon />, path: '/reports' },
+    { label: 'Cấu hình', icon: <SettingsIcon />, path: '/system-configs' },
 ];
 
 export default function AppLayout() {
@@ -38,7 +43,6 @@ export default function AppLayout() {
 
     const isActive = (path: string) => {
         if (path === '/dashboard') return location.pathname === '/dashboard';
-        if (path === '/visits/new') return location.pathname.startsWith('/visits');
         return location.pathname.startsWith(path);
     };
 

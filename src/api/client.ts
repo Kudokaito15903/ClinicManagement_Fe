@@ -5,7 +5,6 @@ const api = axios.create({
     headers: { 'Content-Type': 'application/json' },
 });
 
-// Response interceptor — lỗi được bắt bởi component hoặc global handler
 api.interceptors.response.use(
     (res) => res,
     (err) => {
