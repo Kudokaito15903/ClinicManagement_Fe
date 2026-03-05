@@ -337,7 +337,7 @@ export default function VisitFormPage() {
                     onClick={handleSubmit}
                     sx={{ px: 4 }}
                 >
-                    {submitting ? 'Đang tạo...' : '✅ Tạo lượt khám'}
+                    {submitting ? 'Đang tạo...' : 'Tạo lượt khám'}
                 </Button>
             </Box>
 

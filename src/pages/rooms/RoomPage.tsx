@@ -90,6 +90,7 @@ export default function RoomPage() {
                             <TableHead>
                                 <TableRow>
                                     <TableCell>ID</TableCell>
+                                    <TableCell>Mã phòng</TableCell>
                                     <TableCell>Tên phòng</TableCell>
                                     <TableCell>Mô tả</TableCell>
                                     <TableCell align="right">Thao tác</TableCell>
@@ -97,10 +98,15 @@ export default function RoomPage() {
                             </TableHead>
                             <TableBody>
                                 {rooms.length === 0 ? (
-                                    <TableRow><TableCell colSpan={4} align="center" sx={{ py: 6, color: 'text.secondary' }}>Chưa có phòng nào</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>Chưa có phòng nào</TableCell></TableRow>
                                 ) : rooms.map((r) => (
                                     <TableRow key={r.id} hover sx={{ '&:hover': { bgcolor: alpha('#2563eb', 0.03) } }}>
                                         <TableCell>#{r.id}</TableCell>
+                                        <TableCell>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', bgcolor: alpha('#2563eb', 0.1), px: 1, py: 0.5, borderRadius: 1, display: 'inline-block' }}>
+                                                {r.code || '—'}
+                                            </Typography>
+                                        </TableCell>
                                         <TableCell><Typography fontWeight={500}>{r.name}</Typography></TableCell>
                                         <TableCell sx={{ color: 'text.secondary' }}>{r.description ?? '—'}</TableCell>
                                         <TableCell align="right">

@@ -267,13 +267,13 @@ export interface VisitDiagnosis {
     icdCode: string;
     name: string;
     category?: string;
-    type?: 'primary' | 'secondary';
+    isPrimary?: boolean;
     note?: string;
 }
 
 export interface AddVisitDiagnosisRequest {
     diagnosisId: number;
-    type?: 'primary' | 'secondary';
+    isPrimary?: boolean; // true = chính, false = phụ
     note?: string;
 }
 
@@ -311,3 +311,66 @@ export interface SystemConfig {
     description?: string;
 }
 
+// ───────── Medicine (Danh mục thuốc) ─────────
+
+export interface Medicine {
+    id: number;
+    code: string;
+    name: string;
+    ingredient?: string | null;
+    dosageForm?: string | null;
+    unit: string;
+    manufacturer?: string | null;
+    countryOfOrigin?: string | null;
+    isActive: boolean;
+    createdAt?: string;
+}
+
+export interface MedicineRequest {
+    code?: string;           // required for POST only
+    name: string;
+    unit: string;
+    ingredient?: string | null;
+    dosageForm?: string | null;
+    manufacturer?: string | null;
+    countryOfOrigin?: string | null;
+}
+
+// ───────── Prescription (Đơn thuốc) ─────────
+
+export interface PrescriptionItem {
+    id: number;
+    medicineId: number;
+    medicineCode?: string;
+    medicineName: string;
+    dosageForm?: string | null;
+    unit?: string | null;
+    quantity: number;
+    dosageInstruction?: string | null;
+    note?: string | null;
+}
+
+export interface Prescription {
+    id: number;
+    visitId: number;
+    note?: string | null;
+    items: PrescriptionItem[];
+    createdAt?: string;
+}
+
+export interface CreatePrescriptionRequest {
+    note?: string;
+}
+
+export interface AddPrescriptionItemRequest {
+    medicineId: number;
+    quantity: number;
+    dosageInstruction?: string;
+    note?: string;
+}
+
+export interface UpdatePrescriptionItemRequest {
+    quantity: number;
+    dosageInstruction?: string;
+    note?: string;
+}

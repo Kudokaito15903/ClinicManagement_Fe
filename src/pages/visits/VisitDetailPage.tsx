@@ -7,7 +7,7 @@ import {
     Tooltip, Badge, Dialog, DialogTitle, DialogContent, DialogActions,
     RadioGroup, FormControlLabel, Radio, List, ListItemButton, ListItemIcon,
     ListItemText, InputAdornment, Accordion, AccordionSummary,
-    AccordionDetails, alpha,
+    AccordionDetails, alpha, Autocomplete,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
@@ -28,10 +28,19 @@ import {
     getVisitDiagnoses, addVisitDiagnosis, deleteVisitDiagnosis,
     getVisitBill,
 } from '@/api/visits';
+import {
+    getPrescription, createPrescription, updatePrescription,
+    addPrescriptionItem, updatePrescriptionItem, deletePrescriptionItem
+} from '@/api/prescriptions';
+import { getMedicines } from '@/api/medicines';
 import { getPatientVisits } from '@/api/patients';
 import { getDiagnoses } from '@/api/diagnoses';
 import { getServices } from '@/api/services';
-import type { Visit, VisitDetailResponse, VisitServiceItem, VisitDiagnosis, MedService, Diagnosis, Bill } from '@/types';
+import type {
+    Visit, VisitDetailResponse, VisitServiceItem, VisitDiagnosis,
+    MedService, Diagnosis, Bill,
+    Prescription, Medicine
+} from '@/types';
 import BillModal from '@/components/BillModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
@@ -96,7 +105,7 @@ export default function VisitDetailPage() {
     const [diagDialogOpen, setDiagDialogOpen] = useState(false);
     const [diagFilter, setDiagFilter] = useState('');
     const [selectedDiag, setSelectedDiag] = useState<Diagnosis | null>(null);
-    const [diagType, setDiagType] = useState<'primary' | 'secondary'>('primary');
+    const [diagType, setDiagType] = useState<string>('primary');
     const [diagNote, setDiagNote] = useState('');
     const [addingDiag, setAddingDiag] = useState(false);
     const [deleteDiagId, setDeleteDiagId] = useState<number | null>(null);
@@ -104,6 +113,18 @@ export default function VisitDetailPage() {
     // Conclusion
     const [conclusion, setConclusion] = useState('');
     const [savingConclusion, setSavingConclusion] = useState(false);
+
+    // Prescription
+    const [prescription, setPrescription] = useState<Prescription | null>(null);
+    const [allMedicines, setAllMedicines] = useState<Medicine[]>([]);
+    const [prescNote, setPrescNote] = useState('');
+    const [savingPrescNote, setSavingPrescNote] = useState(false);
+
+    // Prescription inline add
+    const [selectedMed, setSelectedMed] = useState<Medicine | null>(null);
+    const [medQty, setMedQty] = useState<number | ''>(1);
+    const [medInstruction, setMedInstruction] = useState('');
+    const [addingMed, setAddingMed] = useState(false);
 
     // History
     const [history, setHistory] = useState<Visit[]>([]);
@@ -137,11 +158,18 @@ export default function VisitDetailPage() {
             getVisitDiagnoses(visitId),
             getServices(),
             getDiagnoses(),
-        ]).then(([data, diags, allSvcs, allD]) => {
+            getMedicines({ activeOnly: true }),
+            getPrescription(visitId),
+        ]).then(([data, diags, allSvcs, allD, allMeds, pData]) => {
             applyDetailResponse(data);
             setDiagList(diags);
             setAllServices(allSvcs);
             setAllDiag(allD);
+            setAllMedicines(allMeds);
+            if (pData) {
+                setPrescription(pData);
+                setPrescNote(pData.note || '');
+            }
             // Load patient history
             if (data.visit.patient?.id) {
                 getPatientVisits(data.visit.patient.id)
@@ -241,7 +269,7 @@ export default function VisitDetailPage() {
         if (!selectedDiag) return;
         setAddingDiag(true);
         try {
-            await addVisitDiagnosis(visitId, { diagnosisId: selectedDiag.id, type: diagType, note: diagNote || undefined });
+            await addVisitDiagnosis(visitId, { diagnosisId: selectedDiag.id, isPrimary: diagType === 'primary', note: diagNote || undefined });
             setDiagList(await getVisitDiagnoses(visitId));
             setDiagDialogOpen(false);
             setSelectedDiag(null);
@@ -261,6 +289,77 @@ export default function VisitDetailPage() {
             enqueueSnackbar('Đã xoá chẩn đoán', { variant: 'success' });
             setDeleteDiagId(null);
         } catch { enqueueSnackbar('Xoá thất bại', { variant: 'error' }); }
+    };
+
+    // Prescription
+    const handleSavePrescNote = async () => {
+        setSavingPrescNote(true);
+        try {
+            if (prescription) {
+                await updatePrescription(visitId, { note: prescNote });
+                setPrescription(prev => prev ? { ...prev, note: prescNote } : null);
+            } else {
+                const newP = await createPrescription(visitId, { note: prescNote });
+                setPrescription(newP);
+            }
+            enqueueSnackbar('Đã lưu lời dặn', { variant: 'success' });
+        } catch {
+            enqueueSnackbar('Lưu lời dặn thất bại', { variant: 'error' });
+        } finally {
+            setSavingPrescNote(false);
+        }
+    };
+
+    const handleAddPrescItem = async () => {
+        if (!selectedMed || !medQty) return;
+        setAddingMed(true);
+        try {
+            // Auto-create prescription if not exists yet
+            if (!prescription) {
+                const newP = await createPrescription(visitId, { note: prescNote });
+                setPrescription(newP);
+            }
+            const newItem = await addPrescriptionItem(visitId, {
+                medicineId: selectedMed.id,
+                quantity: Number(medQty),
+                dosageInstruction: medInstruction,
+            });
+            setPrescription(prev => prev ? { ...prev, items: [...prev.items, newItem] } : null);
+            setSelectedMed(null);
+            setMedQty(1);
+            setMedInstruction('');
+        } catch (err: any) {
+            enqueueSnackbar(err?.response?.data?.message || 'Thêm thuốc thất bại', { variant: 'error' });
+        } finally {
+            setAddingMed(false);
+        }
+    };
+
+    const handleUpdatePrescItem = async (itemId: number, qty: number, instruction: string) => {
+        try {
+            const updated = await updatePrescriptionItem(visitId, itemId, {
+                quantity: qty,
+                dosageInstruction: instruction,
+            });
+            setPrescription(prev => prev ? {
+                ...prev,
+                items: prev.items.map(it => it.id === itemId ? updated : it)
+            } : null);
+        } catch {
+            enqueueSnackbar('Cập nhật thuốc thất bại', { variant: 'error' });
+        }
+    };
+
+    const handleDeletePrescItem = async (itemId: number) => {
+        try {
+            await deletePrescriptionItem(visitId, itemId);
+            setPrescription(prev => prev ? {
+                ...prev,
+                items: prev.items.filter(it => it.id !== itemId)
+            } : null);
+        } catch {
+            enqueueSnackbar('Xoá thuốc thất bại', { variant: 'error' });
+        }
     };
 
     const handleViewBill = async () => {
@@ -335,13 +434,13 @@ export default function VisitDetailPage() {
                         {prevStatus && prevStatus !== 'received' && (
                             <Button size="small" variant="outlined" startIcon={<ArrowBackIosIcon sx={{ fontSize: 12 }} />}
                                 onClick={() => handleChangeStatus(prevStatus)} disabled={changingStatus}>
-                                ← {STATUS_LABEL[prevStatus]}
+                                {STATUS_LABEL[prevStatus]}
                             </Button>
                         )}
                         {nextStatus && visit.status !== 'paid' && visit.status !== 'completed' && (
                             <Button size="small" variant="contained" endIcon={<ArrowForwardIcon />}
                                 onClick={() => handleChangeStatus(nextStatus)} disabled={changingStatus}>
-                                {STATUS_LABEL[nextStatus]} →
+                                {STATUS_LABEL[nextStatus]}
                             </Button>
                         )}
                         {visit.status === 'completed' && (
@@ -423,6 +522,7 @@ export default function VisitDetailPage() {
                     <Tabs value={tab} onChange={(_, v) => setTab(v)}>
                         <Tab label="🩺 Chẩn đoán & Kết luận" />
                         <Tab label={<Badge badgeContent={services.length} color="primary" sx={{ pr: 1 }}>🔬 Dịch vụ</Badge>} />
+                        <Tab label={<Badge badgeContent={prescription?.items?.length || 0} color="primary" sx={{ pr: 1 }}>💊 Đơn thuốc</Badge>} />
                         <Tab label={<Badge badgeContent={history.length} color="secondary" sx={{ pr: 1 }}>📖 Lịch sử khám</Badge>} />
                     </Tabs>
                 </Box>
@@ -433,7 +533,7 @@ export default function VisitDetailPage() {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                             <Typography variant="subtitle1" fontWeight={600}>CHẨN ĐOÁN</Typography>
                             <Button size="small" startIcon={<AddIcon />} variant="outlined" onClick={() => setDiagDialogOpen(true)}>
-                                + Thêm ICD
+                                Thêm ICD
                             </Button>
                         </Box>
 
@@ -444,7 +544,7 @@ export default function VisitDetailPage() {
                                 {diagList.map((d) => (
                                     <Box key={d.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, mb: 0.5, borderRadius: 1, bgcolor: alpha('#2563eb', 0.04), border: '1px solid', borderColor: 'divider' }}>
                                         <Chip
-                                            label={d.type === 'primary' ? '🔴 CHÍNH' : '🟡 PHỤ'}
+                                            label={d.isPrimary !== false ? '🔴 CHÍNH' : '🟡 PHỤ'}
                                             size="small"
                                             sx={{ fontSize: '0.65rem' }}
                                         />
@@ -500,7 +600,7 @@ export default function VisitDetailPage() {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                             <Typography variant="subtitle1" fontWeight={600}>DỊCH VỤ CHỈ ĐỊNH</Typography>
                             <Button size="small" startIcon={<AddIcon />} variant="outlined" onClick={() => setSvcDialogOpen(true)}>
-                                + Thêm dịch vụ
+                                Thêm dịch vụ
                             </Button>
                         </Box>
 
@@ -558,8 +658,133 @@ export default function VisitDetailPage() {
                         </Box>
                     </TabPanel>
 
-                    {/* ── TAB 2: History ── */}
+                    {/* ── TAB 2: Prescription ── */}
                     <TabPanel value={tab} index={2}>
+                        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>ĐƠN THUỐC</Typography>
+                        <Box sx={{ mb: 3 }}>
+                            <TextField
+                                fullWidth multiline rows={2}
+                                label="Lời dặn bác sĩ"
+                                placeholder="Ghi chú thêm về cách ăn uống, sinh hoạt, kiêng cữ..."
+                                value={prescNote}
+                                onChange={(e) => setPrescNote(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={savingPrescNote ? <CircularProgress size={14} /> : <SaveIcon />}
+                                    onClick={handleSavePrescNote}
+                                    disabled={savingPrescNote || (prescription?.note === prescNote && prescNote === '')}
+                                >
+                                    Lưu lời dặn
+                                </Button>
+                            </Box>
+                        </Box>
+
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Kê đơn thuốc:</Typography>
+                        <Card variant="outlined" sx={{ mb: 3, p: 2, bgcolor: alpha('#2563eb', 0.02) }}>
+                            <Grid container spacing={1.5} alignItems="flex-end">
+                                <Grid item xs={12} sm={5}>
+                                    <Autocomplete
+                                        size="small"
+                                        options={allMedicines}
+                                        getOptionLabel={(opt) => `${opt.name} ${opt.ingredient ? `(${opt.ingredient})` : ''} - [${opt.code}]`}
+                                        value={selectedMed}
+                                        onChange={(_, v) => setSelectedMed(v)}
+                                        renderInput={(params) => <TextField {...params} label="Chọn thuốc" placeholder="Tìm theo tên hoặc mã..." />}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={2}>
+                                    <TextField
+                                        size="small" fullWidth type="number" label="Số lượng"
+                                        InputLabelProps={{ shrink: true }}
+                                        value={medQty} onChange={(e) => setMedQty(e.target.value === '' ? '' : Number(e.target.value))}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={3}>
+                                    <TextField
+                                        size="small" fullWidth label="Cách dùng" placeholder="VD: Sáng 1 chiều 1"
+                                        InputLabelProps={{ shrink: true }}
+                                        value={medInstruction} onChange={(e) => setMedInstruction(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleAddPrescItem();
+                                            }
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={2}>
+                                    <Button fullWidth variant="contained" onClick={handleAddPrescItem} disabled={!selectedMed || !medQty || addingMed}>
+                                        {addingMed ? '...' : 'Thêm'}
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </Card>
+
+                        {(!prescription || !prescription.items || prescription.items.length === 0) ? (
+                            <Typography color="text.secondary" align="center" sx={{ py: 3 }}>Chưa kê thuốc nào</Typography>
+                        ) : (
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Tên thuốc & Hoạt chất</TableCell>
+                                        <TableCell>Dạng/ĐVT</TableCell>
+                                        <TableCell width="120px">Số lượng</TableCell>
+                                        <TableCell>Cách dùng</TableCell>
+                                        <TableCell width="60px"></TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {prescription.items.map((item) => (
+                                        <TableRow key={item.id} hover>
+                                            <TableCell>
+                                                <Typography variant="body2" fontWeight={600}>
+                                                    {item.medicineName} {item.medicineCode ? `(${item.medicineCode})` : ''}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                                                    {item.dosageForm ? `${item.dosageForm} • ` : ''}{item.unit || 'Viên'}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    size="small" type="number" variant="standard"
+                                                    defaultValue={item.quantity}
+                                                    onBlur={(e) => {
+                                                        const val = Number(e.target.value);
+                                                        if (val && val !== item.quantity) handleUpdatePrescItem(item.id, val, item.dosageInstruction || '');
+                                                    }}
+                                                    sx={{ width: 60 }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    size="small" variant="standard" fullWidth
+                                                    defaultValue={item.dosageInstruction || ''}
+                                                    onBlur={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val !== (item.dosageInstruction || '')) handleUpdatePrescItem(item.id, item.quantity, val);
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                <IconButton size="small" color="error" onClick={() => handleDeletePrescItem(item.id)}>
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </TabPanel>
+
+                    {/* ── TAB 3: History ── */}
+                    <TabPanel value={tab} index={3}>
                         <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
                             LỊCH SỬ KHÁM — {visit.patient?.fullName} ({history.length} lần trước)
                         </Typography>
@@ -647,7 +872,7 @@ export default function VisitDetailPage() {
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={() => setSvcDialogOpen(false)} variant="outlined">Hủy</Button>
                     <Button onClick={handleAddService} variant="contained" disabled={!selectedSvc || addingSvc}>
-                        {addingSvc ? 'Đang thêm...' : '✅ Thêm dịch vụ'}
+                        {addingSvc ? 'Đang thêm...' : ' Thêm dịch vụ'}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -18,6 +18,7 @@ import DoctorPage from './pages/doctors/DoctorPage';
 import RoomPage from './pages/rooms/RoomPage';
 import DiagnosisPage from './pages/diagnoses/DiagnosisPage';
 import MedServicePage from './pages/medservices/MedServicePage';
+import MedicinePage from './pages/medicines/MedicinePage';
 import ReportPage from './pages/reports/ReportPage';
 import SystemConfigPage from './pages/systemconfigs/SystemConfigPage';
 
@@ -51,6 +52,7 @@ export default function App() {
                             <Route path="rooms" element={<RoomPage />} />
                             <Route path="diagnoses" element={<DiagnosisPage />} />
                             <Route path="services" element={<MedServicePage />} />
+                            <Route path="medicines" element={<MedicinePage />} />
 
                             <Route path="reports" element={<ReportPage />} />
                             <Route path="system-configs" element={<SystemConfigPage />} />

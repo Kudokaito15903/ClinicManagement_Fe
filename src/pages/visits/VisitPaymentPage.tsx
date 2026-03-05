@@ -11,7 +11,7 @@ import PrintIcon from '@mui/icons-material/Print';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import dayjs from 'dayjs';
 import { useSnackbar } from 'notistack';
-import { getVisitDetail, createPayment, getVisitReceiptUrl } from '@/api/visits';
+import { getVisitDetail, createPayment, getVisitReceiptUrl, getVisitPayment } from '@/api/visits';
 import type { Visit, VisitServiceItem, PaymentMethod } from '@/types';
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN') + ' ₫';
@@ -33,36 +33,44 @@ export default function VisitPaymentPage() {
     const [loading, setLoading] = useState(true);
 
     const [discount, setDiscount] = useState(0);
+    const [examinationFee, setExaminationFee] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
     const [cashierNote, setCashierNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [paidAmount, setPaidAmount] = useState(0);
 
-    const [apiGrandTotal, setApiGrandTotal] = useState(0);
-    const [apiExamFee, setApiExamFee] = useState(0);
-
     useEffect(() => {
         getVisitDetail(visitId)
-            .then((data) => {
+            .then(async (data) => {
                 setVisit(data.visit);
                 setServices(data.services);
-                setApiGrandTotal(data.grandTotal);
-                setApiExamFee(data.examinationFee);
+                setExaminationFee(data.examinationFee ?? 0);
+
+                if (data.visit.status === 'Paid') {
+                    try {
+                        const payment = await getVisitPayment(visitId);
+                        setPaidAmount(payment.finalAmount);
+                        setPaymentMethod(payment.paymentMethod);
+                        setSuccess(true);
+                    } catch (e) {
+                        // ignore if payment fetch fails
+                    }
+                }
             })
             .catch(() => enqueueSnackbar('Không thể tải dữ liệu', { variant: 'error' }))
             .finally(() => setLoading(false));
-    }, [visitId]);
+    }, [visitId, enqueueSnackbar]);
 
     const totalServices = services.reduce((s, item) => s + item.subtotal, 0);
-    // Use grandTotal from API if available, otherwise calculate from services
-    const grandTotal = apiGrandTotal || totalServices + apiExamFee;
+    const grandTotal = totalServices + examinationFee;
     const actualPaid = Math.max(0, grandTotal - discount);
 
     const handleConfirm = async () => {
         setSubmitting(true);
         try {
             const res = await createPayment(visitId, {
+                examinationFee, // Send the pre-calculated fee from the detail API
                 paymentMethod,
                 discount: discount || undefined,
                 cashierNote: cashierNote || null,
@@ -71,7 +79,7 @@ export default function VisitPaymentPage() {
             setSuccess(true);
             enqueueSnackbar('Thanh toán thành công!', { variant: 'success' });
         } catch (err: any) {
-            enqueueSnackbar(err?.response?.data?.message || 'Thanh toán thất bại', { variant: 'error' });
+            enqueueSnackbar(err?.response?.data?.error || err?.response?.data?.message || 'Thanh toán thất bại', { variant: 'error' });
         } finally {
             setSubmitting(false);
         }
@@ -102,7 +110,7 @@ export default function VisitPaymentPage() {
                             startIcon={<PrintIcon />}
                             onClick={() => window.open(getVisitReceiptUrl(visitId), '_blank')}
                         >
-                            🖨 In phiếu thu
+                            In phiếu thu
                         </Button>
                         <Button variant="contained" onClick={() => navigate('/visits')}>
                             Về danh sách
@@ -185,6 +193,10 @@ export default function VisitPaymentPage() {
                                     <Typography color="text.secondary">Tổng dịch vụ:</Typography>
                                     <Typography>{fmt(totalServices)}</Typography>
                                 </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography color="text.secondary">Tiền khám bác sĩ:</Typography>
+                                    <Typography>{fmt(examinationFee)}</Typography>
+                                </Box>
                                 <Divider sx={{ my: 0.5 }} />
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Typography fontWeight={700}>Tổng cộng:</Typography>
@@ -240,7 +252,7 @@ export default function VisitPaymentPage() {
                                 <Button variant="outlined" startIcon={<PrintIcon />}
                                     onClick={() => window.open(getVisitReceiptUrl(visitId), '_blank')}
                                     sx={{ flex: 1 }}>
-                                    🖨 In phiếu
+                                    In phiếu
                                 </Button>
                                 <Button
                                     variant="contained" color="success"
@@ -249,7 +261,7 @@ export default function VisitPaymentPage() {
                                     onClick={handleConfirm}
                                     sx={{ flex: 2 }}
                                 >
-                                    {submitting ? 'Đang xử lý...' : '✅ Xác nhận thu'}
+                                    {submitting ? 'Đang xử lý...' : 'Xác nhận thu'}
                                 </Button>
                             </Box>
                         </CardContent>
