@@ -10,7 +10,8 @@ import DashboardPage from './pages/DashboardPage';
 import PatientListPage from './pages/patients/PatientListPage';
 import PatientFormPage from './pages/patients/PatientFormPage';
 import PatientDetailPage from './pages/patients/PatientDetailPage';
-import VisitListPage from './pages/visits/VisitListPage';
+import ReceptionVisitPage from './pages/visits/ReceptionVisitPage';
+import DoctorVisitPage from './pages/visits/DoctorVisitPage';
 import VisitFormPage from './pages/visits/VisitFormPage';
 import VisitDetailPage from './pages/visits/VisitDetailPage';
 import VisitPaymentPage from './pages/visits/VisitPaymentPage';
@@ -42,7 +43,9 @@ export default function App() {
                             <Route path="patients/:id/edit" element={<PatientFormPage />} />
                             <Route path="patients/:id" element={<PatientDetailPage />} />
 
-                            <Route path="visits" element={<VisitListPage />} />
+                            <Route path="reception" element={<ReceptionVisitPage />} />
+                            <Route path="doctor-desk" element={<DoctorVisitPage />} />
+
                             <Route path="visits/new" element={<VisitFormPage />} />
                             <Route path="visits/:id/payment" element={<VisitPaymentPage />} />
                             <Route path="visits/:id/edit" element={<VisitFormPage />} />

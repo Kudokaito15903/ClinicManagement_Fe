@@ -22,8 +22,9 @@ const DRAWER_WIDTH = 260;
 
 const navItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { label: 'Quầy lễ tân', icon: <EventNoteIcon />, path: '/reception' },
+    { label: 'Phòng bác sĩ', icon: <HealingIcon />, path: '/doctor-desk' },
     { label: 'Bệnh nhân', icon: <PeopleIcon />, path: '/patients' },
-    { label: 'Lần khám', icon: <EventNoteIcon />, path: '/visits' },
     { label: 'Bác sĩ', icon: <LocalHospitalIcon />, path: '/doctors' },
     { label: 'Phòng khám', icon: <MeetingRoomIcon />, path: '/rooms' },
     { label: 'Chẩn đoán', icon: <DiagnosisIcon />, path: '/diagnoses' },
@@ -42,7 +43,6 @@ export default function AppLayout() {
 
     const isActive = (path: string) => {
         if (path === '/dashboard') return location.pathname === '/dashboard';
-        if (path === '/visits/new') return location.pathname.startsWith('/visits');
         return location.pathname.startsWith(path);
     };
 

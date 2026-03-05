@@ -5,17 +5,14 @@ import {
     Table, TableBody, TableCell, TableHead, TableRow, Chip, IconButton,
     Tooltip, MenuItem, alpha,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import PrintIcon from '@mui/icons-material/Print';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { useSnackbar } from 'notistack';
-import { getVisits, updateVisitStatus, getVisitReceiptUrl } from '@/api/visits';
+import { getVisits, updateVisitStatus } from '@/api/visits';
 import { getDoctors } from '@/api/doctors';
 import { getRooms } from '@/api/rooms';
 import type { Visit, Doctor, Room } from '@/types';
@@ -43,7 +40,7 @@ function statusDef(s?: string) {
     return STATUS_DEFS.find((d) => d.key === s) ?? { label: s ?? '—', emoji: '❓', color: '#64748b', bg: '#f1f5f9' };
 }
 
-export default function VisitListPage() {
+export default function DoctorVisitPage() {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const refreshRef = useRef<ReturnType<typeof setInterval>>();
@@ -104,15 +101,11 @@ export default function VisitListPage() {
             {/* ── Header ── */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={700}>Lượt khám hôm nay</Typography>
+                    <Typography variant="h4" fontWeight={700}>Phòng Khám Bác Sĩ</Typography>
                     <Typography color="text.secondary" variant="body2">
                         {dayjs(date).format('dddd, DD/MM/YYYY')}
                     </Typography>
                 </Box>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/visits/new')}
-                    sx={{ borderRadius: '10px', px: 3 }}>
-                    Tiếp nhận bệnh nhân
-                </Button>
             </Box>
 
             {/* ── Filter Bar ── */}
@@ -140,7 +133,7 @@ export default function VisitListPage() {
 
                         {/* Doctor dropdown */}
                         <Grid item xs={12} sm="auto">
-                            <TextField select label="Bác sĩ" value={doctorId} onChange={(e) => setDoctorId(e.target.value)}
+                            <TextField select label="Lọc Bác sĩ" value={doctorId} onChange={(e) => setDoctorId(e.target.value)}
                                 size="small" sx={{ minWidth: 180 }}>
                                 <MenuItem value="">Tất cả bác sĩ</MenuItem>
                                 {doctors.map((d) => <MenuItem key={d.id} value={d.id}>{d.fullName}</MenuItem>)}
@@ -149,7 +142,7 @@ export default function VisitListPage() {
 
                         {/* Room dropdown */}
                         <Grid item xs={12} sm="auto">
-                            <TextField select label="Phòng" value={roomId} onChange={(e) => setRoomId(e.target.value)}
+                            <TextField select label="Lọc Phòng" value={roomId} onChange={(e) => setRoomId(e.target.value)}
                                 size="small" sx={{ minWidth: 160 }}>
                                 <MenuItem value="">Tất cả phòng</MenuItem>
                                 {rooms.map((r) => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)}
@@ -217,8 +210,7 @@ export default function VisitListPage() {
                                 <TableCell width={50}>#</TableCell>
                                 <TableCell>Mã Visit</TableCell>
                                 <TableCell>Bệnh nhân</TableCell>
-                                <TableCell>Bác sĩ</TableCell>
-                                <TableCell>Phòng</TableCell>
+                                <TableCell>Lý do / Triệu chứng</TableCell>
                                 <TableCell>Giờ</TableCell>
                                 <TableCell>Trạng thái</TableCell>
                                 <TableCell align="right">Thao tác</TableCell>
@@ -227,23 +219,20 @@ export default function VisitListPage() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                                         Đang tải...
                                     </TableCell>
                                 </TableRow>
                             ) : visits.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                                         <Typography color="text.secondary">Không có lượt khám nào</Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : visits.map((v, idx) => {
                                 const sd = statusDef(v.status);
                                 const nextSt = NEXT_STATUS[v.status as StatusKey];
-                                // API trả flat fields: patientName, doctorName, roomName
                                 const patientName = v.patientName ?? v.patient?.fullName ?? '—';
-                                const doctorName = v.doctorName ?? v.doctor?.name ?? '—';
-                                const roomName = v.roomName ?? v.room?.name ?? '—';
 
                                 return (
                                     <TableRow
@@ -261,8 +250,7 @@ export default function VisitListPage() {
                                         <TableCell>
                                             <Typography fontWeight={500}>{patientName}</Typography>
                                         </TableCell>
-                                        <TableCell>{doctorName}</TableCell>
-                                        <TableCell>{roomName}</TableCell>
+                                        <TableCell>{v.reason || '—'}</TableCell>
                                         <TableCell>{dayjs(v.visitDate).format('HH:mm')}</TableCell>
                                         <TableCell>
                                             <Chip
@@ -278,7 +266,7 @@ export default function VisitListPage() {
                                         </TableCell>
                                         <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                                             <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                                                <Tooltip title="Xem chi tiết">
+                                                <Tooltip title="Xem bệnh án">
                                                     <IconButton size="small" onClick={() => navigate(`/visits/${v.id}`)}>
                                                         <VisibilityIcon fontSize="small" />
                                                     </IconButton>
@@ -288,22 +276,6 @@ export default function VisitListPage() {
                                                         <IconButton size="small" color="primary"
                                                             onClick={() => handleChangeStatus(v, nextSt)}>
                                                             <PlayArrowIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {v.status === 'Completed' && (
-                                                    <Tooltip title="Thu tiền">
-                                                        <IconButton size="small" color="success"
-                                                            onClick={() => navigate(`/visits/${v.id}/payment`)}>
-                                                            <AttachMoneyIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {v.status === 'Paid' && (
-                                                    <Tooltip title="In phiếu">
-                                                        <IconButton size="small"
-                                                            onClick={() => window.open(getVisitReceiptUrl(v.id), '_blank')}>
-                                                            <PrintIcon fontSize="small" />
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}

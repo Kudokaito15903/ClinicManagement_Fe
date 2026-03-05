@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
 import {
     Box, Typography, Card, CardContent, Grid, Chip, Button,
     CircularProgress, Alert, Divider, Tabs, Tab, TextField,
@@ -20,6 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import PersonIcon from '@mui/icons-material/Person';
+import PrintIcon from '@mui/icons-material/Print';
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
 import {
@@ -43,6 +45,7 @@ import type {
 } from '@/types';
 import BillModal from '@/components/BillModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PrescriptionPrint from '@/components/PrescriptionPrint';
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN') + ' ₫';
 
@@ -81,8 +84,11 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 export default function VisitDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { enqueueSnackbar } = useSnackbar();
     const visitId = Number(id);
+
+    const isReception = searchParams.get('from') === 'reception';
 
     const [visit, setVisit] = useState<Visit | null>(null);
     const [loading, setLoading] = useState(true);
@@ -137,6 +143,9 @@ export default function VisitDetailPage() {
     // Stores the extra totals from the detail response
     const [examinationFee, setExaminationFee] = useState(0);
     const [grandTotal, setGrandTotal] = useState(0);
+
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrintPrescription = useReactToPrint({ contentRef: printRef });
 
     const applyDetailResponse = (data: VisitDetailResponse) => {
         setVisit(data.visit);
@@ -381,14 +390,14 @@ export default function VisitDetailPage() {
         <Box>
             {/* ── HEADER ── */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                <Button startIcon={<ArrowBackIcon />} variant="outlined" onClick={() => navigate('/visits')}>Quay lại</Button>
+                <Button startIcon={<ArrowBackIcon />} variant="outlined" onClick={() => navigate(isReception ? '/reception' : '/doctor-desk')}>Quay lại</Button>
                 <Box sx={{ flex: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                        <Typography variant="h5" fontWeight={700}>{visit.code ?? `#${visitId}`}</Typography>
+                        <Typography variant="h5" fontWeight={700}>{visit.code ?? `#${visitId} `}</Typography>
                         <Chip
-                            label={`${STATUS_EMOJI[visit.status ?? ''] ?? ''} ${STATUS_LABEL[visit.status ?? ''] ?? visit.status}`}
+                            label={`${STATUS_EMOJI[visit.status ?? ''] ?? ''} ${STATUS_LABEL[visit.status ?? ''] ?? visit.status} `}
                             size="small"
-                            sx={{ bgcolor: sd.bg, color: sd.color, fontWeight: 700, border: `1px solid ${alpha(sd.color, 0.3)}` }}
+                            sx={{ bgcolor: sd.bg, color: sd.color, fontWeight: 700, border: `1px solid ${alpha(sd.color, 0.3)} ` }}
                         />
                     </Box>
                     <Typography variant="body2" color="text.secondary">
@@ -411,7 +420,7 @@ export default function VisitDetailPage() {
                                         <Box sx={{
                                             width: 28, height: 28, borderRadius: '50%',
                                             bgcolor: done ? '#dcfce7' : active ? STATUS_BG[s] : '#f1f5f9',
-                                            border: `2px solid ${sc}`,
+                                            border: `2px solid ${sc} `,
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             fontSize: '13px',
                                         }}>
@@ -431,33 +440,39 @@ export default function VisitDetailPage() {
 
                     {/* Action buttons */}
                     <Box sx={{ display: 'flex', gap: 1, mt: 1.5, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                        {prevStatus && prevStatus !== 'received' && (
-                            <Button size="small" variant="outlined" startIcon={<ArrowBackIosIcon sx={{ fontSize: 12 }} />}
-                                onClick={() => handleChangeStatus(prevStatus)} disabled={changingStatus}>
-                                {STATUS_LABEL[prevStatus]}
-                            </Button>
-                        )}
-                        {nextStatus && visit.status !== 'paid' && visit.status !== 'completed' && (
-                            <Button size="small" variant="contained" endIcon={<ArrowForwardIcon />}
-                                onClick={() => handleChangeStatus(nextStatus)} disabled={changingStatus}>
-                                {STATUS_LABEL[nextStatus]}
-                            </Button>
+                        {!isReception && (
+                            <>
+                                {prevStatus && prevStatus !== 'received' && (
+                                    <Button size="small" variant="outlined" startIcon={<ArrowBackIosIcon sx={{ fontSize: 12 }} />}
+                                        onClick={() => handleChangeStatus(prevStatus)} disabled={changingStatus}>
+                                        {STATUS_LABEL[prevStatus]}
+                                    </Button>
+                                )}
+                                {nextStatus && visit.status !== 'paid' && visit.status !== 'completed' && (
+                                    <Button size="small" variant="contained" endIcon={<ArrowForwardIcon />}
+                                        onClick={() => handleChangeStatus(nextStatus)} disabled={changingStatus}>
+                                        {STATUS_LABEL[nextStatus]}
+                                    </Button>
+                                )}
+                            </>
                         )}
                         {visit.status === 'completed' && (
                             <Button size="small" variant="contained" color="success" startIcon={<AttachMoneyIcon />}
-                                onClick={() => navigate(`/visits/${visitId}/payment`)}>
+                                onClick={() => navigate(`/ visits / ${visitId}/payment`)}>
                                 💰 Thu tiền
-                            </Button>
+                            </Button >
                         )}
-                        {visit.status === 'paid' && (
-                            <Button size="small" variant="outlined" onClick={handleViewBill}>🖨 Phiếu thu</Button>
-                        )}
-                    </Box>
-                </CardContent>
-            </Card>
+                        {
+                            visit.status === 'paid' && (
+                                <Button size="small" variant="outlined" onClick={handleViewBill}>🖨 Phiếu thu</Button>
+                            )
+                        }
+                    </Box >
+                </CardContent >
+            </Card >
 
             {/* ── 2-column info ── */}
-            <Grid container spacing={2} sx={{ mb: 2 }}>
+            < Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} md={6}>
                     <Card sx={{ height: '100%' }}>
                         <CardContent sx={{ p: 3 }}>
@@ -514,10 +529,10 @@ export default function VisitDetailPage() {
                         </CardContent>
                     </Card>
                 </Grid>
-            </Grid>
+            </Grid >
 
             {/* ── TABS ── */}
-            <Card>
+            < Card >
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <Tabs value={tab} onChange={(_, v) => setTab(v)}>
                         <Tab label="🩺 Chẩn đoán & Kết luận" />
@@ -670,7 +685,19 @@ export default function VisitDetailPage() {
                                 onChange={(e) => setPrescNote(e.target.value)}
                                 InputLabelProps={{ shrink: true }}
                             />
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, gap: 1 }}>
+                                {prescription && prescription.items.length > 0 && (
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        color="secondary"
+                                        startIcon={<PrintIcon />}
+                                        onClick={() => handlePrintPrescription()}
+                                        disabled={savingPrescNote || addingMed}
+                                    >
+                                        In Đơn Thuốc
+                                    </Button>
+                                )}
                                 <Button
                                     size="small"
                                     variant="outlined"
@@ -824,10 +851,10 @@ export default function VisitDetailPage() {
                         ))}
                     </TabPanel>
                 </CardContent>
-            </Card>
+            </Card >
 
             {/* ── Add Service Dialog ── */}
-            <Dialog open={svcDialogOpen} onClose={() => setSvcDialogOpen(false)} maxWidth="sm" fullWidth>
+            < Dialog open={svcDialogOpen} onClose={() => setSvcDialogOpen(false)} maxWidth="sm" fullWidth >
                 <DialogTitle>Thêm dịch vụ chỉ định</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -875,10 +902,10 @@ export default function VisitDetailPage() {
                         {addingSvc ? 'Đang thêm...' : ' Thêm dịch vụ'}
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </Dialog >
 
             {/* ── Add Diagnosis Dialog ── */}
-            <Dialog open={diagDialogOpen} onClose={() => setDiagDialogOpen(false)} maxWidth="sm" fullWidth>
+            < Dialog open={diagDialogOpen} onClose={() => setDiagDialogOpen(false)} maxWidth="sm" fullWidth >
                 <DialogTitle>Thêm chẩn đoán</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -917,13 +944,20 @@ export default function VisitDetailPage() {
                         {addingDiag ? 'Đang thêm...' : '✅ Thêm chẩn đoán'}
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </Dialog >
 
             {/* Confirm deletes */}
-            <ConfirmDialog open={!!deleteSvcId} message="Xoá dịch vụ này?" onConfirm={handleDeleteService} onClose={() => setDeleteSvcId(null)} />
-            <ConfirmDialog open={!!deleteDiagId} message="Xoá chẩn đoán này?" onConfirm={handleDeleteDiagnosis} onClose={() => setDeleteDiagId(null)} />
+            < ConfirmDialog open={!!deleteSvcId} message="Xoá dịch vụ này?" onConfirm={handleDeleteService} onClose={() => setDeleteSvcId(null)} />
+            < ConfirmDialog open={!!deleteDiagId} message="Xoá chẩn đoán này?" onConfirm={handleDeleteDiagnosis} onClose={() => setDeleteDiagId(null)} />
 
-            <BillModal open={billOpen} bill={bill} onClose={() => setBillOpen(false)} />
-        </Box>
+            < BillModal open={billOpen} bill={bill} onClose={() => setBillOpen(false)} />
+
+            {/* Hidden Print Container */}
+            <Box sx={{ display: 'none' }}>
+                {visit && prescription ? (
+                    <PrescriptionPrint ref={printRef} visit={visit} prescription={prescription} />
+                ) : null}
+            </Box>
+        </Box >
     );
 }
